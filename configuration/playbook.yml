@@ -1,0 +1,35 @@
+---
+- hosts: all
+  become: true
+  tasks:
+    - name: install httpd
+      package:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - httpd
+        - amazon-efs-utils
+
+    - name: replace index.html
+      template:
+        src: /home/ec2-user/index.html
+        dest: "/var/www/html/index.html"
+        mode: u=rw,g=r,o=r
+
+    - name: start httpd
+      service:
+        name: "{{ item }}"
+        state: started
+      loop:
+        - httpd
+        - nfs
+
+    - name: create efs directory
+      file:
+        path: /efs
+        state: directory        
+
+    - name: configure efs
+      command: "{{ item }}"
+      loop:
+        - mount -t efs -o tls {{ efs_id }}:/ /efs
